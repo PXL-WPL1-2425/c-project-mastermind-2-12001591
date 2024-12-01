@@ -15,6 +15,18 @@ namespace c_project_mastermind_1_12001591
         private DateTime startTime;
         private bool gameEnded = false;
         private bool isDebugMode = false;
+        private List<GuessHistoryItem> guessHistory = new List<GuessHistoryItem>();
+        public class GuessHistoryItem
+        {
+            public List<Brush> Colors { get; }
+            public List<Brush> Borders { get; }
+
+            public GuessHistoryItem(List<Brush> colors, List<Brush> borders)
+            {
+                Colors = colors;
+                Borders = borders;
+            }
+        }
 
         public MainWindow()
         {
@@ -22,13 +34,10 @@ namespace c_project_mastermind_1_12001591
             attempts = 0; 
             Title = $"Poging {attempts + 1}/10"; 
 
-            
             GenerateNewCode();
 
-           
             timer.Interval = TimeSpan.FromSeconds(1); 
             timer.Tick += Timer_Tick; 
-
             
             StartCountdown();
 
@@ -68,7 +77,6 @@ namespace c_project_mastermind_1_12001591
             }
         }
 
-       
         private void GenerateNewCode()
         {
             Random rnd = new Random();
@@ -78,7 +86,6 @@ namespace c_project_mastermind_1_12001591
             color4 = RandomColor(rnd);
         }
 
-        
         private string RandomColor(Random rnd)
         {
             int randomNumber = rnd.Next(1, 7);
@@ -105,7 +112,6 @@ namespace c_project_mastermind_1_12001591
             timer.Interval = TimeSpan.FromMilliseconds(1); 
         }
 
-        
         private void Timer_Tick(object sender, EventArgs e)
         {
             TimeSpan interval = DateTime.Now.Subtract(startTime); 
@@ -138,7 +144,6 @@ namespace c_project_mastermind_1_12001591
         {
             timer.Stop(); 
         }
-       
         
         private string GetComboBoxColor(ComboBox comboBox)
         {
@@ -146,7 +151,6 @@ namespace c_project_mastermind_1_12001591
             ComboBoxItem selectedItem = comboBox.SelectedItem as ComboBoxItem;
             return selectedItem?.Content.ToString(); 
         }
-
         
         private Color GetColorFromString(string color)
         {
@@ -162,41 +166,89 @@ namespace c_project_mastermind_1_12001591
             }
         }
 
-        
         private void CompareCodeWithLabels(string input1, string input2, string input3, string input4)
         {
-            SameColor(colorLabel1, input1, color1, 1); 
-            SameColor(colorLabel2, input2, color2, 2); 
-            SameColor(colorLabel3, input3, color3, 3); 
-            SameColor(colorLabel4, input4, color4, 4); 
+            
+            var label1Info = SameColor(colorLabel1, input1, color1, 1);
+            var label2Info = SameColor(colorLabel2, input2, color2, 2);
+            var label3Info = SameColor(colorLabel3, input3, color3, 3);
+            var label4Info = SameColor(colorLabel4, input4, color4, 4);
+         
+            guessHistory.Add(new GuessHistoryItem(
+                new List<Brush> { label1Info.Item1, label2Info.Item1, label3Info.Item1, label4Info.Item1 },
+                new List<Brush> { label1Info.Item2, label2Info.Item2, label3Info.Item2, label4Info.Item2 }
+            ));
+
+            UpdateGuessHistoryUI();
         }
 
-        private void SameColor(Label label, string chosenColor, string correctColor, int position)
+        private void UpdateGuessHistoryUI()
         {
-            
-            Color chosenColorActual = GetColorFromString(chosenColor);
-            Color correctColorActual = GetColorFromString(correctColor);
+            guessHistoryListBox.Items.Clear();
 
-            if (chosenColorActual == correctColorActual)
+            foreach (var guess in guessHistory)
             {
-                
-                label.Background = new SolidColorBrush(chosenColorActual); 
-                label.BorderThickness = new Thickness(5); 
-                label.BorderBrush = new SolidColorBrush(Colors.Red); 
+                var guessStackPanel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Margin = new Thickness(5)
+                };
+
+                for (int i = 0; i < 4; i++)
+                {
+                    var colorAndBorderBox = new Border
+                    {
+                        Background = guess.Colors[i],
+                        BorderBrush = guess.Borders[i],
+                        BorderThickness = new Thickness(2), 
+                        Width = 30, 
+                        Height = 30, 
+                        Margin = new Thickness(2)
+                    };
+                    guessStackPanel.Children.Add(colorAndBorderBox);
+                }
+                guessHistoryListBox.Items.Add(guessStackPanel);
             }
-            else if (IsPartialMatch(chosenColorActual, position)) 
-            {
-                label.Background = new SolidColorBrush(chosenColorActual); 
-                label.BorderBrush = new SolidColorBrush(Colors.Wheat); 
-                label.BorderThickness = new Thickness(3);
-            }
-            
         }
 
-        
+        private (Brush, Brush) SameColor(Label label, string chosenColor, string correctColor, int position)
+        {
+            Brush chosenColorActual = GetBrushFromString(chosenColor);  
+            Brush correctColorActual = GetBrushFromString(correctColor);
+
+            if (((SolidColorBrush)chosenColorActual).Color == Colors.Gray)
+            {
+                label.Background = chosenColorActual;
+                label.BorderBrush = new SolidColorBrush(Colors.Transparent);
+                label.BorderThickness = new Thickness(0);
+                return (chosenColorActual, new SolidColorBrush(Colors.Transparent));  
+            }
+
+            if (((SolidColorBrush)chosenColorActual).Color == ((SolidColorBrush)correctColorActual).Color)
+            {
+                label.Background = chosenColorActual;
+                label.BorderThickness = new Thickness(5);
+                label.BorderBrush = new SolidColorBrush(Colors.Red);
+                return (chosenColorActual, new SolidColorBrush(Colors.Red));  
+            }
+            else if (IsPartialMatch(((SolidColorBrush)chosenColorActual).Color, position))
+            {
+                label.Background = chosenColorActual;
+                label.BorderBrush = new SolidColorBrush(Colors.Wheat);
+                label.BorderThickness = new Thickness(3);
+                return (chosenColorActual, new SolidColorBrush(Colors.Wheat)); 
+            }
+            else
+            {
+                label.Background = chosenColorActual;
+                label.BorderBrush = new SolidColorBrush(Colors.Transparent);
+                label.BorderThickness = new Thickness(0);
+                return (chosenColorActual, new SolidColorBrush(Colors.Transparent)); 
+            }
+        }
+
         private bool IsPartialMatch(Color chosenColorActual, int position)
         {
-            
             switch (position)
             {
                 case 1:
@@ -224,12 +276,10 @@ namespace c_project_mastermind_1_12001591
         private void ValidateButton_Click(object sender, RoutedEventArgs e)
         {
             if (gameEnded) return; 
-
-            
+  
             timer.Stop(); 
             StartCountdown(); 
 
-           
             string comboBox1Color = GetComboBoxColor(comboBox1);
             string comboBox2Color = GetComboBoxColor(comboBox2);
             string comboBox3Color = GetComboBoxColor(comboBox3);
@@ -241,14 +291,11 @@ namespace c_project_mastermind_1_12001591
                 return; 
             }
 
-            
             CompareCodeWithLabels(comboBox1Color, comboBox2Color, comboBox3Color, comboBox4Color);
 
-           
             attempts++;
             Title = $"Poging {attempts + 1}/10";
-
-            
+ 
             if (comboBox1Color == color1 && comboBox2Color == color2 && comboBox3Color == color3 && comboBox4Color == color4)
             {
                 MessageBox.Show("Congratulations! You guessed the code correctly!");
@@ -264,7 +311,7 @@ namespace c_project_mastermind_1_12001591
             }
             else
             {
-                
+
             }
         }
         /// <summary>
@@ -281,6 +328,19 @@ namespace c_project_mastermind_1_12001591
             else
             {
                 debugCodeTextBox.Visibility = Visibility.Collapsed;
+            }
+        }
+        private Brush GetBrushFromString(string color)
+        {
+            switch (color)
+            {
+                case "Blue": return new SolidColorBrush(Colors.Blue);
+                case "Red": return new SolidColorBrush(Colors.Red);
+                case "White": return new SolidColorBrush(Colors.White);
+                case "Yellow": return new SolidColorBrush(Colors.Yellow);
+                case "Orange": return new SolidColorBrush(Colors.Orange);
+                case "Green": return new SolidColorBrush(Colors.Green);
+                default: return new SolidColorBrush(Colors.Gray);
             }
         }
     }
