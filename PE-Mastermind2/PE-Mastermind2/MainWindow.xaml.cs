@@ -432,7 +432,7 @@ namespace c_project_mastermind_1_12001591
                 case "Yellow": return new SolidColorBrush(Colors.Yellow);
                 case "Orange": return new SolidColorBrush(Colors.Orange);
                 case "Green": return new SolidColorBrush(Colors.Green);
-                default: return new SolidColorBrush(Colors.Gray);
+                default: return new SolidColorBrush(Colors.Gray); 
             }
         }
   
