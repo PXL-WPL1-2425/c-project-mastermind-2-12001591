@@ -11,10 +11,11 @@ namespace c_project_mastermind_1_12001591
     {
         private DispatcherTimer timer = new DispatcherTimer();
         private string color1, color2, color3, color4;
-        private int attempts; 
+        private int attempts;
         private DateTime startTime;
         private bool gameEnded = false;
         private bool isDebugMode = false;
+        private int currentScore = 100;
         private List<GuessHistoryItem> guessHistory = new List<GuessHistoryItem>();
         public class GuessHistoryItem
         {
@@ -31,14 +32,14 @@ namespace c_project_mastermind_1_12001591
         public MainWindow()
         {
             InitializeComponent();
-            attempts = 0; 
-            Title = $"Poging {attempts + 1}/10"; 
+            attempts = 0;
+            Title = $"Poging {attempts + 1}/10";
 
             GenerateNewCode();
 
-            timer.Interval = TimeSpan.FromSeconds(1); 
-            timer.Tick += Timer_Tick; 
-            
+            timer.Interval = TimeSpan.FromSeconds(1);
+            timer.Tick += Timer_Tick;
+
             StartCountdown();
 
             this.KeyDown += MainWindow_KeyDown;
@@ -52,7 +53,7 @@ namespace c_project_mastermind_1_12001591
         {
             if (e.Key == Key.F12 && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
-                ToggleDebug(); 
+                ToggleDebug();
             }
         }
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -60,7 +61,7 @@ namespace c_project_mastermind_1_12001591
             ComboBox comboBox = sender as ComboBox;
             Label correspondingLabel = null;
 
-           
+
             if (comboBox == comboBox1)
                 correspondingLabel = colorLabel1;
             else if (comboBox == comboBox2)
@@ -70,7 +71,7 @@ namespace c_project_mastermind_1_12001591
             else if (comboBox == comboBox4)
                 correspondingLabel = colorLabel4;
 
-            
+
             if (comboBox?.SelectedItem is ComboBoxItem selectedItem)
             {
                 correspondingLabel.Background = new SolidColorBrush(GetColorFromString(selectedItem.Content.ToString()));
@@ -107,32 +108,32 @@ namespace c_project_mastermind_1_12001591
         /// </summary>
         private void StartCountdown()
         {
-            startTime = DateTime.Now; 
-            timer.Start(); 
-            timer.Interval = TimeSpan.FromMilliseconds(1); 
+            startTime = DateTime.Now;
+            timer.Start();
+            timer.Interval = TimeSpan.FromMilliseconds(1);
         }
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            TimeSpan interval = DateTime.Now.Subtract(startTime); 
-            timerTextBox.Text = interval.ToString(@"ss\:fff"); 
+            TimeSpan interval = DateTime.Now.Subtract(startTime);
+            timerTextBox.Text = interval.ToString(@"ss\:fff");
 
-            
+
             if (interval.TotalSeconds >= 10)
             {
-                StopCountdown(); 
+                StopCountdown();
                 MessageBox.Show("Time's up! You lost your turn.");
 
-                
-                attempts++; 
-                Title = $"Poging {attempts + 1}/10"; 
 
-                
+                attempts++;
+                Title = $"Poging {attempts + 1}/10";
+
+
                 if (attempts >= 10)
                 {
                     MessageBox.Show("Game over! You've reached the maximum number of attempts.");
-                    gameEnded = true; 
-                    timer.Stop(); 
+                    gameEnded = true;
+                    timer.Stop();
                 }
             }
         }
@@ -142,16 +143,16 @@ namespace c_project_mastermind_1_12001591
         /// </summary>
         private void StopCountdown()
         {
-            timer.Stop(); 
+            timer.Stop();
         }
-        
+
         private string GetComboBoxColor(ComboBox comboBox)
         {
-            
+
             ComboBoxItem selectedItem = comboBox.SelectedItem as ComboBoxItem;
-            return selectedItem?.Content.ToString(); 
+            return selectedItem?.Content.ToString();
         }
-        
+
         private Color GetColorFromString(string color)
         {
             switch (color)
@@ -162,25 +163,57 @@ namespace c_project_mastermind_1_12001591
                 case "Yellow": return Colors.Yellow;
                 case "Orange": return Colors.Orange;
                 case "Green": return Colors.Green;
-                default: return Colors.Gray; 
+                default: return Colors.Gray;
             }
         }
 
         private void CompareCodeWithLabels(string input1, string input2, string input3, string input4)
         {
-            
             var label1Info = SameColor(colorLabel1, input1, color1, 1);
             var label2Info = SameColor(colorLabel2, input2, color2, 2);
             var label3Info = SameColor(colorLabel3, input3, color3, 3);
             var label4Info = SameColor(colorLabel4, input4, color4, 4);
-         
+
             guessHistory.Add(new GuessHistoryItem(
                 new List<Brush> { label1Info.Item1, label2Info.Item1, label3Info.Item1, label4Info.Item1 },
                 new List<Brush> { label1Info.Item2, label2Info.Item2, label3Info.Item2, label4Info.Item2 }
             ));
 
             UpdateGuessHistoryUI();
+           
+            currentScore += CalculateScore(input1, input2, input3, input4);
+            scoreLabel.Content = $"Score: {currentScore}";
         }
+
+        private int CalculateScore(string comboBox1Color, string comboBox2Color, string comboBox3Color, string comboBox4Color)
+        {
+            int mistakes = 0;
+
+            mistakes += CompareColor(comboBox1Color, color1);
+            mistakes += CompareColor(comboBox2Color, color2);
+            mistakes += CompareColor(comboBox3Color, color3);
+            mistakes += CompareColor(comboBox4Color, color4);
+
+            return mistakes;
+        }
+
+
+        private int CompareColor(string chosenColor, string correctColor)
+        {
+            if (chosenColor == correctColor)
+            {
+                return 0;  
+            }
+            else if (color1 == chosenColor || color2 == chosenColor || color3 == chosenColor || color4 == chosenColor)
+            {
+                return 1;  
+            }
+            else
+            {
+                return 2;  
+            }
+        }
+
 
         private void UpdateGuessHistoryUI()
         {
@@ -200,9 +233,9 @@ namespace c_project_mastermind_1_12001591
                     {
                         Background = guess.Colors[i],
                         BorderBrush = guess.Borders[i],
-                        BorderThickness = new Thickness(2), 
-                        Width = 30, 
-                        Height = 30, 
+                        BorderThickness = new Thickness(2),
+                        Width = 30,
+                        Height = 30,
                         Margin = new Thickness(2)
                     };
                     guessStackPanel.Children.Add(colorAndBorderBox);
@@ -213,7 +246,7 @@ namespace c_project_mastermind_1_12001591
 
         private (Brush, Brush) SameColor(Label label, string chosenColor, string correctColor, int position)
         {
-            Brush chosenColorActual = GetBrushFromString(chosenColor);  
+            Brush chosenColorActual = GetBrushFromString(chosenColor);
             Brush correctColorActual = GetBrushFromString(correctColor);
 
             if (((SolidColorBrush)chosenColorActual).Color == Colors.Gray)
@@ -221,7 +254,7 @@ namespace c_project_mastermind_1_12001591
                 label.Background = chosenColorActual;
                 label.BorderBrush = new SolidColorBrush(Colors.Transparent);
                 label.BorderThickness = new Thickness(0);
-                return (chosenColorActual, new SolidColorBrush(Colors.Transparent));  
+                return (chosenColorActual, new SolidColorBrush(Colors.Transparent));
             }
 
             if (((SolidColorBrush)chosenColorActual).Color == ((SolidColorBrush)correctColorActual).Color)
@@ -229,21 +262,21 @@ namespace c_project_mastermind_1_12001591
                 label.Background = chosenColorActual;
                 label.BorderThickness = new Thickness(5);
                 label.BorderBrush = new SolidColorBrush(Colors.Red);
-                return (chosenColorActual, new SolidColorBrush(Colors.Red));  
+                return (chosenColorActual, new SolidColorBrush(Colors.Red));
             }
             else if (IsPartialMatch(((SolidColorBrush)chosenColorActual).Color, position))
             {
                 label.Background = chosenColorActual;
                 label.BorderBrush = new SolidColorBrush(Colors.Wheat);
                 label.BorderThickness = new Thickness(3);
-                return (chosenColorActual, new SolidColorBrush(Colors.Wheat)); 
+                return (chosenColorActual, new SolidColorBrush(Colors.Wheat));
             }
             else
             {
                 label.Background = chosenColorActual;
                 label.BorderBrush = new SolidColorBrush(Colors.Transparent);
                 label.BorderThickness = new Thickness(0);
-                return (chosenColorActual, new SolidColorBrush(Colors.Transparent)); 
+                return (chosenColorActual, new SolidColorBrush(Colors.Transparent));
             }
         }
 
@@ -275,10 +308,10 @@ namespace c_project_mastermind_1_12001591
         }
         private void ValidateButton_Click(object sender, RoutedEventArgs e)
         {
-            if (gameEnded) return; 
-  
-            timer.Stop(); 
-            StartCountdown(); 
+            if (gameEnded) return;
+
+            timer.Stop();
+            StartCountdown();
 
             string comboBox1Color = GetComboBoxColor(comboBox1);
             string comboBox2Color = GetComboBoxColor(comboBox2);
@@ -288,42 +321,49 @@ namespace c_project_mastermind_1_12001591
             if (comboBox1Color == null || comboBox2Color == null || comboBox3Color == null || comboBox4Color == null)
             {
                 MessageBox.Show("Please select colors from all ComboBoxes.");
-                return; 
+                return;
             }
+
+            int mistakes = CalculateScore(comboBox1Color, comboBox2Color, comboBox3Color, comboBox4Color);
+            currentScore -= mistakes; 
+
+            if (currentScore < 0)
+            {
+                currentScore = 0;
+            }
+
+            scoreLabel.Content = $"Score: {currentScore}";
 
             CompareCodeWithLabels(comboBox1Color, comboBox2Color, comboBox3Color, comboBox4Color);
 
             attempts++;
             Title = $"Poging {attempts + 1}/10";
- 
+
             if (comboBox1Color == color1 && comboBox2Color == color2 && comboBox3Color == color3 && comboBox4Color == color4)
             {
                 MessageBox.Show("Congratulations! You guessed the code correctly!");
-                gameEnded = true; 
-                timer.Stop(); 
+                gameEnded = true;
+                timer.Stop();
             }
-            
             else if (attempts >= 10)
             {
                 MessageBox.Show("Game over! You've reached the maximum number of attempts.");
-                gameEnded = true; 
-                timer.Stop(); 
-            }
-            else
-            {
-
+                gameEnded = true;
+                timer.Stop();
             }
         }
+
+
         /// <summary>
         /// Schakelt de debugmodus in of uit. Wanneer deze actief is, wordt de code getoond in de textBox.
         /// </summary>
         private void ToggleDebug()
         {
-            isDebugMode = !isDebugMode; 
+            isDebugMode = !isDebugMode;
             if (isDebugMode)
             {
                 debugCodeTextBox.Visibility = Visibility.Visible;
-                debugCodeTextBox.Text = $"{color1}, {color2}, {color3}, {color4}"; 
+                debugCodeTextBox.Text = $"{color1}, {color2}, {color3}, {color4}";
             }
             else
             {
@@ -343,5 +383,6 @@ namespace c_project_mastermind_1_12001591
                 default: return new SolidColorBrush(Colors.Gray);
             }
         }
+  
     }
 }
