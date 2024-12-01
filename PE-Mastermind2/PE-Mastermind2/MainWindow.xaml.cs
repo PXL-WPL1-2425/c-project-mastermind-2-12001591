@@ -325,7 +325,7 @@ namespace c_project_mastermind_1_12001591
             }
 
             int mistakes = CalculateScore(comboBox1Color, comboBox2Color, comboBox3Color, comboBox4Color);
-            currentScore -= mistakes; 
+            currentScore -= mistakes;
 
             if (currentScore < 0)
             {
@@ -344,15 +344,67 @@ namespace c_project_mastermind_1_12001591
                 MessageBox.Show("Congratulations! You guessed the code correctly!");
                 gameEnded = true;
                 timer.Stop();
+                AskToPlayAgain();
             }
             else if (attempts >= 10)
             {
                 MessageBox.Show("Game over! You've reached the maximum number of attempts.");
                 gameEnded = true;
                 timer.Stop();
+                AskToPlayAgain();
             }
         }
 
+        private void AskToPlayAgain()
+        {
+            MessageBoxResult result = MessageBox.Show("Do you want to play again?", "Game Over", MessageBoxButton.YesNo);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                ResetGame();  
+            }
+            else
+            {
+                this.Close(); 
+            }
+        }
+
+        private void ResetGame()
+        {
+            attempts = 0;
+            currentScore = 100;
+            gameEnded = false;
+            GenerateNewCode();
+            scoreLabel.Content = $"Score: {currentScore}";
+            Title = $"Poging {attempts + 1}/10";
+            timer.Start();  
+            StartCountdown();
+            guessHistory.Clear();  
+            guessHistoryListBox.Items.Clear();  
+            timerTextBox.Clear(); 
+
+            colorLabel1.Background = new SolidColorBrush(Colors.Transparent);
+            colorLabel2.Background = new SolidColorBrush(Colors.Transparent);
+            colorLabel3.Background = new SolidColorBrush(Colors.Transparent);
+            colorLabel4.Background = new SolidColorBrush(Colors.Transparent);
+
+            colorLabel1.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            colorLabel1.BorderThickness = new Thickness(0);
+
+            colorLabel2.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            colorLabel2.BorderThickness = new Thickness(0);
+
+            colorLabel3.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            colorLabel3.BorderThickness = new Thickness(0);
+
+            colorLabel4.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            colorLabel4.BorderThickness = new Thickness(0);
+
+            comboBox1.SelectedIndex = -1;  
+            comboBox2.SelectedIndex = -1;  
+            comboBox3.SelectedIndex = -1;  
+            comboBox4.SelectedIndex = -1;  
+        }
 
         /// <summary>
         /// Schakelt de debugmodus in of uit. Wanneer deze actief is, wordt de code getoond in de textBox.
